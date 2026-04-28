@@ -1,4 +1,4 @@
-# autoformalizer
+# auto_milp
 
 Agent instructions for autonomous MILP formulation iteration.
 
@@ -23,7 +23,7 @@ python prepare.py --pdf <path_to_pdf>
 ### 2. Create git branch
 Create a fresh branch for your formulation session:
 ```bash
-git checkout -b autoformalizer/<tag>
+git checkout -b auto_milp/<tag>
 ```
 where `<tag>` is today's date (e.g., `apr28`). This branch must not already exist.
 
@@ -221,7 +221,7 @@ If a run crashes:
 
 ```
 [SETUP]
-Branch: autoformalizer/apr28
+Branch: auto_milp/apr28
 Problem: Vehicle Routing Problem (VRP) with time windows
 Baseline: 10 vehicles, M locations
 

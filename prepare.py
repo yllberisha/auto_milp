@@ -1,5 +1,5 @@
 """
-PDF parsing and problem extraction for autoformalizer.
+PDF parsing and problem extraction for auto_milp.
 
 Usage:
     python prepare.py --pdf <path_to_pdf>   # Extract problem structure
@@ -18,7 +18,7 @@ except ImportError:
     pdfplumber = None
 
 
-CACHE_DIR = Path.home() / ".cache" / "autoformalizer"
+CACHE_DIR = Path.home() / ".cache" / "auto_milp"
 PROBLEMS_DIR = Path(__file__).parent / "problems"
 OUTPUTS_DIR = Path(__file__).parent / "outputs"
 PROBLEM_EXTRACTED_FILE = OUTPUTS_DIR / "problem_extracted.json"
@@ -385,7 +385,7 @@ def generate_latex_skeleton(problem_title: str, problem_desc: str) -> str:
 \\usepackage{{amssymb}}
 
 \\title{{{problem_title}}}
-\\author{{Autoformalizer}}
+\\author{{auto\\_milp}}
 \\date{{\\today}}
 
 \\begin{{document}}
@@ -414,7 +414,7 @@ def generate_latex_skeleton(problem_title: str, problem_desc: str) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Autoformalizer problem extraction")
+    parser = argparse.ArgumentParser(description="auto_milp problem extraction")
     parser.add_argument("--pdf", type=str, help="Path to the PDF problem statement")
     parser.add_argument("--dump-examples", action="store_true", help="Print detected or seeded examples")
     parser.add_argument("--list-metrics", action="store_true", help="Show evaluation metrics")

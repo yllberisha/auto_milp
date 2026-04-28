@@ -469,18 +469,35 @@ def _resolve_client(args: argparse.Namespace) -> JSONLLMClient:
     if args.replay_dir:
         return ReplayClient(args.replay_dir)
 
-    model = args.model or os.getenv("AUTOFORMALIZER_MODEL") or os.getenv("OPENAI_MODEL")
-    api_key = os.getenv("AUTOFORMALIZER_API_KEY") or os.getenv("OPENAI_API_KEY")
-    base_url = os.getenv("AUTOFORMALIZER_BASE_URL") or "https://api.openai.com/v1"
-    endpoint = os.getenv("AUTOFORMALIZER_ENDPOINT") or "chat/completions"
+    model = (
+        args.model
+        or os.getenv("AUTO_MILP_MODEL")
+        or os.getenv("AUTOFORMALIZER_MODEL")
+        or os.getenv("OPENAI_MODEL")
+    )
+    api_key = (
+        os.getenv("AUTO_MILP_API_KEY")
+        or os.getenv("AUTOFORMALIZER_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+    )
+    base_url = (
+        os.getenv("AUTO_MILP_BASE_URL")
+        or os.getenv("AUTOFORMALIZER_BASE_URL")
+        or "https://api.openai.com/v1"
+    )
+    endpoint = (
+        os.getenv("AUTO_MILP_ENDPOINT")
+        or os.getenv("AUTOFORMALIZER_ENDPOINT")
+        or "chat/completions"
+    )
 
     if not model:
         raise RuntimeError(
-            "No model configured. Set AUTOFORMALIZER_MODEL or pass --model."
+            "No model configured. Set AUTO_MILP_MODEL or pass --model."
         )
     if not api_key:
         raise RuntimeError(
-            "No API key configured. Set AUTOFORMALIZER_API_KEY or OPENAI_API_KEY."
+            "No API key configured. Set AUTO_MILP_API_KEY or OPENAI_API_KEY."
         )
 
     return OpenAICompatibleClient(
@@ -516,7 +533,7 @@ def main() -> None:
 
     best = result["best_evaluation"]
     print("=" * 70)
-    print("AUTOFORMALIZER AGENT")
+    print("AUTO_MILP AGENT")
     print("=" * 70)
     print(f"Problem:           {result['problem']['title']}")
     print(f"Toy examples:      {len(result['examples'])}")

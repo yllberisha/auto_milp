@@ -7,6 +7,7 @@ from unittest import mock
 
 import agent
 import formulate
+import run
 from prepare import seed_toy_examples
 
 try:
@@ -182,6 +183,139 @@ class ReplayAgentTests(unittest.TestCase):
             self.assertEqual(result["best_evaluation"]["example_pass_rate"], 1.0)
             self.assertEqual(result["best_evaluation"]["output_match_rate"], 1.0)
             self.assertGreater(result["best_evaluation"]["overall_quality"], 0.8)
+
+    def test_run_pipeline_with_existing_problem_and_replay(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            outputs_dir = root / "outputs"
+            replay_dir = root / "replay"
+            outputs_dir.mkdir(parents=True, exist_ok=True)
+            replay_dir.mkdir(parents=True, exist_ok=True)
+
+            problem = {
+                "title": "Tiny Knapsack",
+                "description": "Choose a subset of items with maximum value and bounded weight.",
+                "input_spec": "n capacity\nweight_i value_i",
+                "output_spec": "best_value",
+                "constraints": "All weights and values are non-negative integers.",
+                "objective_hint": "maximize total value",
+                "detected_examples": [],
+                "parser_hints": {
+                    "input_lines": ["n capacity", "weight_i value_i"],
+                    "output_lines": ["best_value"],
+                    "named_tokens": ["n", "capacity", "weight_i", "value_i"],
+                },
+                "raw_text": "",
+            }
+            problem_file = outputs_dir / "problem_extracted.json"
+            examples_file = outputs_dir / "toy_examples.json"
+            problem_file.write_text(json.dumps(problem, indent=2), encoding="utf-8")
+
+            example_payload = {
+                "examples": [
+                    {
+                        "name": "single_pick",
+                        "input_text": "2 3\n1 2\n2 4\n",
+                        "expected_output_text": "6",
+                        "expected_objective": 6,
+                        "explanation": "Both items fit.",
+                    }
+                ]
+            }
+
+            candidate_code = textwrap.dedent(
+                '''
+                from typing import Any, Dict, Tuple
+
+                from ortools.linear_solver import pywraplp
+
+                FORMULATION_NAME = "tiny_knapsack"
+
+
+                def parse_instance(input_text: str) -> Dict[str, Any]:
+                    rows = [list(map(int, line.split())) for line in input_text.strip().splitlines() if line.strip()]
+                    n, capacity = rows[0]
+                    items = [{"weight": row[0], "value": row[1]} for row in rows[1:1 + n]]
+                    return {"n": n, "capacity": capacity, "items": items}
+
+
+                def build_model(instance: Dict[str, Any]) -> Tuple[pywraplp.Solver, Dict[str, Any]]:
+                    solver = pywraplp.Solver.CreateSolver("SCIP")
+                    if solver is None:
+                        raise RuntimeError("Could not create SCIP solver")
+                    picks = [solver.IntVar(0, 1, f"x_{i}") for i in range(instance["n"])]
+                    solver.Add(
+                        solver.Sum(instance["items"][i]["weight"] * picks[i] for i in range(instance["n"]))
+                        <= instance["capacity"]
+                    )
+                    solver.Maximize(
+                        solver.Sum(instance["items"][i]["value"] * picks[i] for i in range(instance["n"]))
+                    )
+                    return solver, {"picks": picks}
+
+
+                def extract_solution(
+                    solver: pywraplp.Solver,
+                    instance: Dict[str, Any],
+                    context: Dict[str, Any],
+                ) -> Dict[str, Any]:
+                    objective = int(round(solver.Objective().Value()))
+                    return {"objective_value": objective}
+
+
+                def format_output(solution: Dict[str, Any]) -> str:
+                    return str(solution["objective_value"])
+
+
+                def describe_formulation(problem: Dict[str, Any]) -> Dict[str, Any]:
+                    return {"summary": "Knapsack test formulation.", "latex": "", "assumptions": []}
+                '''
+            ).strip()
+
+            proposal_payload = {
+                "formulation_name": "tiny_knapsack",
+                "analysis": "Model the problem as a 0/1 knapsack.",
+                "assumptions": ["The problem is standard knapsack."],
+                "latex": "\\max \\sum_i v_i x_i",
+                "python_code": candidate_code,
+            }
+
+            (replay_dir / "01_examples.json").write_text(
+                json.dumps(example_payload, indent=2),
+                encoding="utf-8",
+            )
+            (replay_dir / "02_formulation.json").write_text(
+                json.dumps(proposal_payload, indent=2),
+                encoding="utf-8",
+            )
+
+            best_candidate = outputs_dir / "best_formulation.py"
+            with mock.patch.object(agent, "OUTPUTS_DIR", outputs_dir), \
+                mock.patch.object(agent, "RUNS_DIR", outputs_dir / "agent_runs"), \
+                mock.patch.object(agent, "BEST_METADATA_FILE", outputs_dir / "best_attempt.json"), \
+                mock.patch.object(agent, "AGENT_REPORT_FILE", outputs_dir / "agent_report.md"), \
+                mock.patch.object(agent, "BEST_CANDIDATE_FILE", best_candidate), \
+                mock.patch.object(formulate, "BEST_CANDIDATE_FILE", best_candidate), \
+                mock.patch.object(run.agent, "OUTPUTS_DIR", outputs_dir), \
+                mock.patch.object(run.agent, "RUNS_DIR", outputs_dir / "agent_runs"), \
+                mock.patch.object(run.agent, "BEST_METADATA_FILE", outputs_dir / "best_attempt.json"), \
+                mock.patch.object(run.agent, "AGENT_REPORT_FILE", outputs_dir / "agent_report.md"), \
+                mock.patch.object(run.agent, "BEST_CANDIDATE_FILE", best_candidate):
+                result = run.run_pipeline(
+                    pdf_path=None,
+                    problem_file=problem_file,
+                    examples_file=examples_file,
+                    max_iterations=1,
+                    quality_threshold=0.7,
+                    min_examples=1,
+                    model=None,
+                    temperature=0.2,
+                    replay_dir=replay_dir,
+                )
+
+            self.assertEqual(result["problem"]["title"], "Tiny Knapsack")
+            self.assertTrue(best_candidate.exists())
+            self.assertEqual(result["best_evaluation"]["example_pass_rate"], 1.0)
 
 
 if __name__ == "__main__":
