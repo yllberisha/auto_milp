@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific (local artifacts)
+results.tsv                 # Experiment log (local only, don't commit)
+run.log                     # Last run output
+outputs/problem_extracted.json  # Extracted problem (regenerated each time)
+outputs/metrics.json        # Latest metrics
+outputs/formulation.tex     # Generated LaTeX
+outputs/formulation.md      # Generated Markdown
+.cache/                     # Local caches
+
+# Logs
+*.log
