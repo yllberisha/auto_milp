@@ -17,7 +17,7 @@ The current workflow is:
 5. Run the candidate on the examples and score the result.
 6. Repeat with feedback from the failed cases.
 
-The repository is aimed at contest-style and coursework-style optimization problems where the input and output formats matter, and where a formulation should be checked by actually running code instead of only writing down equations.
+The repository is aimed at contest-style and coursework-style optimization problems.
 
 ## Current scope
 
