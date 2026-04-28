@@ -31,7 +31,7 @@ What is implemented:
 - evaluation of candidate modules by parsing input, building a solver model, solving, and comparing output
 - replay mode for testing the agent loop without live API calls
 
-What is not implemented well yet:
+To Be Done:
 
 - robust PDF parsing for messy statements
 - strong semantic validation beyond sample-based checking
